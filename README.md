@@ -37,3 +37,7 @@ npm run upload```
 **2.** Open the project that you just created.
 
 **3.** Hit 'Run'. It will ask for your Google Login. Once you give permission, it will execute the script and you will see the Add on under the 'Add-ons' menu in the spreadsheet
+
+
+
+> Addon was created using the boilerplate - [apps-script-starter](https://github.com/labnol/apps-script-starter)
