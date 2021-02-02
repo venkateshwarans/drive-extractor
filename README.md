@@ -23,6 +23,13 @@ npm install
 **4.** Open `.clasp.json` and paste the above `scriptId`. 
 
 
+
+**NOTE**
+Make sure to turn the `Google Apps Script API` ON under global 'Settings' in https://script.google.com/home/usersettings
+
+
+
+
 ### How to build and upload to Google Apps Script
 **1.**```
 npm run build```
