@@ -172,7 +172,7 @@ const getLink = (fileObj) => {
   } else {
     link = fileObj.webContentLink;
   }
-
+  link = `https://drive.google.com/file/d/${fileObj.id}/view?usp=sharing`;
   return link || 'Not applicable';
 };
 
@@ -359,8 +359,11 @@ const getSheetRows = (displayFolderLinks) => {
       }
 
       if (repeatFolderNames || oIndex === 0) {
+        // eslint-disable-next-line no-unused-vars
         folderPath = firstFolderPath;
+        // eslint-disable-next-line no-unused-vars
         folderLink = firstFolderLink;
+        // eslint-disable-next-line no-unused-vars
         folderNameLink = firstFolderNameLink;
       }
 
@@ -379,14 +382,14 @@ const getSheetRows = (displayFolderLinks) => {
 
       //      var previewLink = '=hyperlink("https://drive.google.com/file/d/'
       //                     + fileObj.id + '/edit", "' + fileObj.name + '")'
-      const previewLink = `=hyperlink("https://drive.google.com/file/d/${fileObj.id}/edit"${hyperlinkSeparator}"${fileObj.name}")`;
+      // const previewLink = `=hyperlink("https://drive.google.com/file/d/${fileObj.id}/edit"${hyperlinkSeparator}"${fileObj.name}")`;
 
       // Actual usable row data
-      const rowTemp = [folderNameLink, folderPath];
+      const rowTemp = [fileObj.name, '', '', '', '', '', '', '', '', ''];
 
-      if (displayFolderLinks) rowTemp.push(folderLink);
+      // if (displayFolderLinks) rowTemp.push(folderLink);
 
-      rowTemp.push(previewLink, fileObj.link, fileObj.access);
+      rowTemp.push(fileObj.link, '', '', '', '', '', '');
       rows.push(rowTemp);
     });
   });
@@ -397,29 +400,89 @@ const getSheetRows = (displayFolderLinks) => {
   };
 };
 
+/** *******************************************
+ * Fills each row array to the right with selected value
+ * to match the largest row in the dataset.
+ *
+ * @param {array} range: 2d array of data
+ * @para, {string} fillItem: (optional) String containg the value you want
+ *                            to add to fill out your array.
+ * @returns 2d array with all rows of equal length.
+ */
+
+const fillOutRange = (range, fillItem) => {
+  const fill = fillItem === undefined ? '' : fillItem;
+
+  // Get the max row length out of all rows in range.
+  const initialValue = 0;
+  const maxRowLen = range.reduce((acc, cur) => Math.max(acc, cur.length), initialValue);
+
+  // Fill shorter rows to match max with selecte value.
+  const filled = range.map((row) => {
+    const dif = maxRowLen - row.length;
+    if (dif > 0) {
+      const arizzle = [];
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < dif; i++) {
+        arizzle[i] = fill;
+      }
+      // eslint-disable-next-line no-param-reassign
+      row = row.concat(arizzle);
+    }
+    return row;
+  });
+  return filled;
+};
+
 /**
  * A function that writes header to the sheet.
  */
-const writeHeader = (sheet, displayFolderLinks) => {
-  const headerTemp = ['Folder', 'Folder Path'];
+const writeHeader = (sheet) => {
+  const headerTemp = [
+    'Name of the Content',
+    'Description of the content in one line - telling about the content',
+    'Keywords',
+    'Audience',
+    'Author',
+    'Copyright',
+    'License',
+    'Attributions',
+    'Icon File Path',
+    'File Format'
+  ];
 
-  if (displayFolderLinks) headerTemp.push('Folder Link');
-  headerTemp.push('File', 'Direct Link', 'Shared With');
+  // if (displayFolderLinks) headerTemp.push('Folder Link');
+
+  headerTemp.push(
+    'File Path',
+    'Content Type',
+    'Level 1 Textbook Unit',
+    'Level 2 Textbook Unit',
+    'Level 3 Textbook Unit',
+    'Level 4 Textbook Unit'
+  );
 
   // Sheet formatting
   const header = [headerTemp];
-  sheet.getRange(1, 1, 1, displayFolderLinks ? 6 : 5).setValues(header);
-  sheet.setColumnWidth(1, 125);
-  sheet.setColumnWidth(2, 275);
-  sheet.setColumnWidth(3, displayFolderLinks ? 150 : 300);
-  sheet.setColumnWidth(4, displayFolderLinks ? 300 : 150);
-  sheet.setColumnWidth(5, displayFolderLinks ? 150 : 325);
-  sheet.setColumnWidth(6, displayFolderLinks ? 325 : 100);
+  sheet.getRange(1, 1, 1, 16).setValues(header);
+  sheet.setColumnWidth(1, 300);
+  sheet.setColumnWidth(2, 200);
+  sheet.setColumnWidth(3, 100);
+  sheet.setColumnWidth(4, 100);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 100);
+  sheet.setColumnWidth(7, 100);
+  sheet.setColumnWidth(8, 100);
+  sheet.setColumnWidth(9, 100);
+  sheet.setColumnWidth(10, 100);
+  sheet.setColumnWidth(11, 300);
+  sheet.setColumnWidth(12, 100);
+  sheet.setColumnWidth(13, 100);
+  sheet.setColumnWidth(14, 100);
+  sheet.setColumnWidth(15, 100);
+  sheet.setColumnWidth(16, 100);
   sheet.setFrozenRows(1);
-  sheet
-    .getRange(`A1:${displayFolderLinks ? 'F1' : 'E1'}`)
-    .setBackground('#00FF00')
-    .setFontWeight('bold');
+  sheet.getRange(`A1:P1`).setBackground('#FFF').setFontWeight('bold');
 };
 
 /**
@@ -427,12 +490,11 @@ const writeHeader = (sheet, displayFolderLinks) => {
  */
 const writeToSpreadSheet = (resetHeaders) => {
   const spreadsheet = SpreadsheetApp.getActive();
-  const sheetName = 'Drive Direct Links';
+  const sheetName = 'Bulk Upload Links';
   const displayFolderLinks = getSetProperty('displayFolderLinks', 'document', 'bool');
   let sheet = spreadsheet.getSheetByName(sheetName);
   const valueObj = getSheetRows(displayFolderLinks);
   const { rows } = valueObj;
-
   // if the length of rows is 0, there is no file on Drive.
   if (rows.length === 0) {
     return;
@@ -441,29 +503,21 @@ const writeToSpreadSheet = (resetHeaders) => {
   // if the sheet is already available clears and activates, else
   // creates one.
   if (sheet) {
-    sheet.getRange(resetHeaders ? 1 : 2, 1, sheet.getMaxRows(), 6).clear();
+    sheet
+      .getRange(resetHeaders ? 1 : 2, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+      .clear();
     sheet.activate();
   } else {
     sheet = spreadsheet.insertSheet(sheetName);
-    writeHeader(sheet, displayFolderLinks);
-    sheet.deleteColumns(6, sheet.getMaxColumns() - 6);
+    writeHeader(sheet);
+    sheet.deleteColumns(17, sheet.getMaxColumns() - 17);
   }
 
-  if (resetHeaders) writeHeader(sheet, displayFolderLinks);
-
+  if (resetHeaders) writeHeader(sheet);
   // Pushing data
-  sheet
-    .getRange(2, 1, rows.length, displayFolderLinks ? 6 : 5)
-    .setValues(rows)
-    .setBackgrounds(valueObj.backgrounds);
-  sheet
-    .getRange(2, 1, rows.length, displayFolderLinks ? 2 : 3)
-    .setFontColor('black')
-    .setFontLine('none');
-
-  if (displayFolderLinks) {
-    sheet.getRange(2, 4, rows.length, 1).setFontColor('black').setFontLine('none');
-  }
+  const range = sheet.getRange(2, 1, rows.length, 17);
+  const betterArray = fillOutRange(rows);
+  range.setValues(betterArray);
 };
 
 /**
@@ -474,15 +528,52 @@ const writeToSpreadSheet = (resetHeaders) => {
 const setMenuItems = (e) => {
   const menu = SpreadsheetApp.getUi().createAddonMenu();
   let used = null;
+  let autoRefresh;
+  // eslint-disable-next-line no-unused-vars
+  let repeatFolders;
+  // eslint-disable-next-line no-unused-vars
+  let displayFolderLinks;
 
   if (e && e.authMode !== ScriptApp.AuthMode.NONE) {
+    autoRefresh = getSetProperty('autoRefresh', 'document', 'bool');
+    // eslint-disable-next-line no-unused-vars
+    repeatFolders = getSetProperty('repeatFolders', 'document', 'bool');
+    // eslint-disable-next-line no-unused-vars
+    displayFolderLinks = getSetProperty('displayFolderLinks', 'document', 'bool');
     used = getSetProperty('installed', null, 'bool');
   }
 
-  const menuObj = [];
+  const menuObj = [
+    {
+      name: used ? 'Refresh Links' : 'Generate Links',
+      functionName: used ? 'refreshLinks' : 'showPrompt',
+      installed: true,
+    },
+  ];
 
   if (used) {
-    menuObj.push({ name: 'Select folders for links', functionName: 'showPrompt' });
+    menuObj.push(
+      { name: 'Select folders for links', functionName: 'showPrompt' },
+      null,
+      {
+        name: 'Autorefresh on open',
+        functionName: 'toggleAutoRefresh',
+        installed: false,
+        propertyKey: autoRefresh,
+      }
+      // {
+      //   name: 'Display folder links',
+      //   functionName: 'toggleDisplayFolderLinks',
+      //   installed: false,
+      //   propertyKey: displayFolderLinks
+      // },
+      // {
+      //   name: 'Repeat folder names',
+      //   functionName: 'toggleRepeatFolders',
+      //   installed: false,
+      //   propertyKey: repeatFolders
+      // }
+    );
   }
 
   menuObj.forEach((mObj) => {

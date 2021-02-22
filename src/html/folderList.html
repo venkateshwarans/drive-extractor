@@ -31,8 +31,8 @@
      function openPicker() {
        var hiddenInputEle = document.getElementById('sharedWithMe');
        google.script.run
-    .withSuccessHandler(closeDialog)
-    .showPicker(hiddenInputEle.value === 'true', false);
+         .withSuccessHandler(closeDialog)
+         .showPicker(hiddenInputEle.value === 'true', false);
      }
 
      function generateLinks() {
@@ -42,8 +42,8 @@
        var hiddenInputEle = document.getElementById('sharedWithMe');
 
        google.script.run
-    .withSuccessHandler(closeDialog)
-    .generateLinks(recursivePickEle.checked, hiddenInputEle.value === 'true');
+         .withSuccessHandler(closeDialog)
+         .generateLinks(recursivePickEle.checked, hiddenInputEle.value === 'true');
      }
 
      function resetCustomFolders() {

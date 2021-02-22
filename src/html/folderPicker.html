@@ -26,7 +26,20 @@
 
       window.addEventListener('load', preventFormSubmit);
 
+      // The Browser API key obtained from the Google API Console.
+      // eslint-disable-next-line no-unused-vars
+      var developerKey = 'AIzaSyBkQRWszUSLQ-Dk7GsesnkVtT7pm7romow';
+
       // The Client ID obtained from the Google API Console. Replace with your own Client ID.
+      // eslint-disable-next-line no-unused-vars
+      var clientId = '25199620687-kngg4e66riv82tlm8080i2o9av5u2nrf.apps.googleusercontent.com';
+
+      // Scope to use to access user's drive.
+      // eslint-disable-next-line no-unused-vars
+      var scope = 'https://www.googleapis.com/auth/drive';
+
+      // eslint-disable-next-line no-unused-vars
+      var appId = '25199620687';
 
       var pickerApiLoaded = false;
       var oauthToken;
@@ -42,6 +55,14 @@
         oauthToken = token;
         createPicker();
       }
+      // eslint-disable-next-line no-unused-vars
+      function onAuthApiLoad() {
+        var authBtn = document.getElementById('auth');
+        authBtn.disabled = false;
+        authBtn.addEventListener('click', () => {
+          gapi.auth2.authorize({ client_id: clientId, scope }, handleAuthResult);
+        });
+      }
 
       function onPickerApiLoad() {
         pickerApiLoaded = true;
@@ -54,6 +75,13 @@
 
         var instruction = document.getElementById('copy-instruction');
         instruction.style.display = action === 'hide' ? 'block' : 'none';
+      }
+
+      function handleAuthResult(authResult) {
+        if (authResult && !authResult.error) {
+          oauthToken = authResult.access_token;
+          createPicker();
+        }
       }
 
       // Create and render a Picker object for picking user Photos.
@@ -73,7 +101,9 @@
             .enableFeature(google.picker.Feature.NAV_HIDDEN)
             .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
             .hideTitleBar()
+            .setAppId(appId)
             .setOAuthToken(oauthToken)
+            .setDeveloperKey(developerKey)
             .setCallback(pickerCallback)
             .addView(docsView)
             .setOrigin(google.script.host.origin)
